@@ -9,30 +9,16 @@ public class SpinningState : FSMState
 {
     private bool isReady = false;
     [Enter]
-    public void Enter()
+    private void Enter()
     {
         Settings.Model.Set(C.IsStartInteractable, false);
         Settings.Model.Set(C.IsStopInteractable, false);
 
-        CoroutineRunner.Start(ReelAcceleration());
-    }
-    private IEnumerator ReelAcceleration()
-    {
-        float elapsedTime = 0f;
-        float startSpeed = 0f;
-        float targetSpeed = C.MaxReelSpeed;
-        while (elapsedTime < C.ReelAccelerationTime)
-        {
-            elapsedTime += Time.deltaTime;
-            float currentSpeed = Mathf.Lerp(startSpeed, targetSpeed, elapsedTime / C.ReelAccelerationTime);
-            Settings.Model.Set(C.ReelSpeed, currentSpeed);
-            yield return null;
-        }
-        Settings.Model.Set(C.ReelSpeed, targetSpeed);
+        Settings.Model.EventManager.Invoke(C.OnReelStarting);
     }
 
-    [One(C.ReelAccelerationTime)]
-    public void Ready()
+    [Bind(C.FSMStartedSig)]
+    private void Ready()
     {
         Settings.Model.Set(C.IsStartInteractable, false);
         Settings.Model.Set(C.IsStopInteractable, true);
@@ -41,7 +27,7 @@ public class SpinningState : FSMState
     }
 
     [Bind(C.FSMStopSig)]
-    public void OnStopSignal()
+    private void OnStopSignal()
     {
         if (isReady)
         {

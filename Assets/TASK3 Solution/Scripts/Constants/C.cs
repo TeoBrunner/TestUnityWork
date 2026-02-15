@@ -1,14 +1,22 @@
 public static class C
 {
+    //Model Keys
     public const string ReelSpeed = "ReelSpeed";
-    public const float MaxReelSpeed = 300f;
-    public const float ReelPrewarmTime = 1f;
-    public const float ReelAccelerationTime = 2f;
-    public const float ReelDecelerationTime = 3f;
+    public const string MaxReelSpeed = "MaxReelSpeed";
+    public const string ReelAccelerationTime = "ReelAccelerationTime";
+    public const string ReelDecelerationTime = "ReelDecelerationTime";
 
+    //FSM Signals
     public const string FSMStartSig = "StartSignal";
+    public const string FSMStartedSig = "StartedSignal";
     public const string FSMStopSig = "StopSignal";
+    public const string FSMStoppedSig = "StoppedSignal";
 
+    //Model Events
+    public const string OnReelStarting = "OnReelStarted";
+    public const string OnReelStopping = "OnReelStopped";
+
+    //View Bindings
     public const string IsStartInteractable = "StartBtnInteractable";
     public const string IsStopInteractable = "StopBtnInteractable";
     public const string OnStartClick = "OnStartClick";

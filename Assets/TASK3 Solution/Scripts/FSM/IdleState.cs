@@ -6,14 +6,14 @@ using AxGrid.Model;
 public class IdleState : FSMState
 {
     [Enter]
-    public void Enter()
+    private void Enter()
     {
         Settings.Model.Set(C.IsStartInteractable, true);
         Settings.Model.Set(C.IsStopInteractable, false);
         Settings.Model.Set(C.ReelSpeed, 0);
     }
     [Bind(C.FSMStartSig)]
-    public void OnStartSignal()
+    private void OnStartSignal()
     {
         Parent.Change("Spinning");
     }

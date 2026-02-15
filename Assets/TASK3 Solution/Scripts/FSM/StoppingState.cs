@@ -1,5 +1,6 @@
 using AxGrid;
 using AxGrid.FSM;
+using AxGrid.Model;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,24 +13,10 @@ public class StoppingState : FSMState
     {
         Settings.Model.Set(C.IsStartInteractable, false);
         Settings.Model.Set(C.IsStopInteractable, false);
-        
-        CoroutineRunner.Start(ReelDeceleration());
+
+        Settings.Model.EventManager.Invoke(C.OnReelStopping);
     }
-    private IEnumerator ReelDeceleration()
-    {
-        float elapsedTime = 0f;
-        float startSpeed = Settings.Model.Get<float>(C.ReelSpeed);
-        float targetSpeed = 0f;
-        while (elapsedTime < C.ReelDecelerationTime)
-        {
-            elapsedTime += Time.deltaTime;
-            float currentSpeed = Mathf.Lerp(startSpeed, targetSpeed, elapsedTime / C.ReelDecelerationTime);
-            Settings.Model.Set(C.ReelSpeed, currentSpeed);
-            yield return null;
-        }
-        Settings.Model.Set(C.ReelSpeed, targetSpeed);
-    }
-    [One(C.ReelDecelerationTime)]
+    [Bind(C.FSMStoppedSig)]
     private void Ready()
     {
         Parent.Change("Idle");

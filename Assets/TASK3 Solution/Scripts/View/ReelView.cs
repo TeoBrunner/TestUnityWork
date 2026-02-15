@@ -1,13 +1,18 @@
 using AxGrid;
 using AxGrid.Base;
+using System.Collections;
 using UnityEngine;
 
 public class ReelView : MonoBehaviourExt
 {
-    [SerializeField] SlotView slotPrefab;
+    [Header("Slot Spawn")]
+    [SerializeField] private SlotView slotPrefab;
     [SerializeField] Transform slotParent;
     [SerializeField] float slotSpaceY = 10;
-
+    [Header("Reel Settings")]
+    [SerializeField] private float MaxReelSpeed = 300f;
+    [SerializeField] private float ReelAccelerationTime = 2f;
+    [SerializeField] private float ReelDecelerationTime = 3f;
     private SlotView[] slots = new SlotView[SLOT_COUNT];
 
     private const int SLOT_COUNT = 4;
@@ -22,6 +27,28 @@ public class ReelView : MonoBehaviourExt
             slot.Rect.anchoredPosition = new Vector2(0, -(i + SLOT_START_INDEX) * (slot.Rect.sizeDelta.y + slotSpaceY));
             slots[i] = slot;
         }
+    }
+    [OnStart]
+    private void Init()
+    {
+        Settings.Model.Set(C.MaxReelSpeed, MaxReelSpeed);
+        Settings.Model.Set(C.ReelAccelerationTime, ReelAccelerationTime);
+        Settings.Model.Set(C.ReelDecelerationTime, ReelDecelerationTime);
+
+        Settings.Model.EventManager.AddAction(C.OnReelStarting, () =>
+        {
+            float time = Settings.Model.Get<float>(C.ReelAccelerationTime);
+            float startSpeed = 0f;
+            float targetSpeed = Settings.Model.Get<float>(C.MaxReelSpeed);
+            StartCoroutine(LerpReelSpeed(time, startSpeed, targetSpeed,C.FSMStartedSig));
+        });
+        Settings.Model.EventManager.AddAction(C.OnReelStopping, () =>
+        {
+            float time = Settings.Model.Get<float>(C.ReelAccelerationTime);
+            float startSpeed = Settings.Model.Get<float>(C.ReelSpeed);
+            float targetSpeed = 0f;
+            StartCoroutine(LerpReelSpeed(time, startSpeed, targetSpeed, C.FSMStoppedSig));
+        });
     }
 
     [OnUpdate]
@@ -43,6 +70,17 @@ public class ReelView : MonoBehaviourExt
             }
         }
     }
-
+    private IEnumerator LerpReelSpeed(float time, float from, float to, string resultEvent)
+    {
+        float elapsedTime = 0f;;
+        while (elapsedTime < time)
+        {
+            elapsedTime += Time.deltaTime;
+            float currentSpeed = Mathf.Lerp(from, to, elapsedTime / time);
+            Settings.Model.Set(C.ReelSpeed, currentSpeed);
+            yield return null;
+        }
+        Settings.Fsm.Invoke(resultEvent);
+    }
 
 }
