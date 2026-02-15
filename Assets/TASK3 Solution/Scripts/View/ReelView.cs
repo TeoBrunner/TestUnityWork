@@ -44,24 +44,26 @@ public class ReelView : MonoBehaviourExt
         });
         Settings.Model.EventManager.AddAction(C.OnReelStopping, () =>
         {
-            float time = Settings.Model.Get<float>(C.ReelAccelerationTime);
-            float startSpeed = Settings.Model.Get<float>(C.ReelSpeed);
-            float targetSpeed = 0f;
-            StartCoroutine(LerpReelSpeed(time, startSpeed, targetSpeed, C.FSMStoppedSig));
+            StartCoroutine(SnapStop());
         });
     }
 
     [OnUpdate]
     private void UpdateScrolling()
     {
+
         float reelSpeed = Settings.Model.GetFloat(C.ReelSpeed);
+        MoveSlots(reelSpeed * Time.deltaTime);
+    }
+    private void MoveSlots(float deltaY)
+    {
         for (int i = 0; i < SLOT_COUNT; i++)
         {
             var slot = slots[i];
             if (slot != null)
             {
                 var pos = slot.Rect.anchoredPosition;
-                pos.y -= reelSpeed * Time.deltaTime;
+                pos.y -= deltaY;
                 if (pos.y < -(SLOT_COUNT + SLOT_START_INDEX) * (slot.Rect.sizeDelta.y + slotSpaceY))
                 {
                     pos.y += SLOT_COUNT * (slot.Rect.sizeDelta.y + slotSpaceY);
@@ -82,5 +84,33 @@ public class ReelView : MonoBehaviourExt
         }
         Settings.Fsm.Invoke(resultEvent);
     }
+    private IEnumerator SnapStop()
+    {
+        Settings.Model.Set(C.ReelSpeed, 0f);
 
+        float currentY = slots[0].Rect.anchoredPosition.y;
+        float stepY = slotPrefab.Rect.sizeDelta.y + slotSpaceY;
+        float offset = currentY % stepY;
+        int slotsToPass = Random.Range(3,6);
+        float totalDistance = offset + slotsToPass * stepY;
+        float timeToStop = Settings.Model.Get<float>(C.ReelDecelerationTime);
+        float elapsedTime = 0f;
+        float lastDistance = 0f;
+        while (elapsedTime < timeToStop)
+        {
+            elapsedTime += Time.deltaTime;
+            float t = elapsedTime / timeToStop;
+
+            float progress = 1f - Mathf.Pow(1f - t, 3f);
+
+            float currentDistance = totalDistance * progress;
+            float delta = currentDistance - lastDistance;
+            lastDistance = currentDistance;
+
+            MoveSlots(delta);
+            yield return null;
+        }
+
+        Settings.Fsm.Invoke(C.FSMStoppedSig);
+    }
 }
