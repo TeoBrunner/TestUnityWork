@@ -1,15 +1,19 @@
 using AxGrid;
 using AxGrid.Base;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class ReelView : MonoBehaviourExt
 {
-    [Header("Slot Spawn")]
+    [Header("Slots")]
     [SerializeField] private SlotView slotPrefab;
     [SerializeField] Transform slotParent;
     [SerializeField] float slotSpaceY = 10;
-    [Header("Reel Settings")]
+    [SerializeField] List<Sprite> slotIcons;
+    [Header("Particles")]
+    [SerializeField] private SlotParticlesView particlesView;
+    [Header("Reel")]
     [SerializeField] private float MaxReelSpeed = 300f;
     [SerializeField] private float ReelAccelerationTime = 2f;
     [SerializeField] private float ReelDecelerationTime = 3f;
@@ -26,6 +30,7 @@ public class ReelView : MonoBehaviourExt
             var slot = Instantiate(slotPrefab, slotParent);
             slot.Rect.anchoredPosition = new Vector2(0, -(i + SLOT_START_INDEX) * (slot.Rect.sizeDelta.y + slotSpaceY));
             slots[i] = slot;
+            SetRandomIcon(slot);
         }
     }
     [OnStart]
@@ -67,10 +72,41 @@ public class ReelView : MonoBehaviourExt
                 if (pos.y < -(SLOT_COUNT + SLOT_START_INDEX) * (slot.Rect.sizeDelta.y + slotSpaceY))
                 {
                     pos.y += SLOT_COUNT * (slot.Rect.sizeDelta.y + slotSpaceY);
+                    SetRandomIcon(slot);
                 }
                 slot.Rect.anchoredPosition = pos;
             }
         }
+    }
+    private void SetRandomIcon(SlotView slot)
+    {
+        int index = Random.Range(0, slotIcons.Count);
+        slot.SetIconSprite(slotIcons[index]);
+    }
+    private void PlayParticles()
+    {
+        SlotView centralSlot = GetCentralSlot();
+        particlesView.UpdateSprite(centralSlot.IconSprite);
+        particlesView.PlayParticles();
+    }
+    private SlotView GetCentralSlot()
+    {
+        SlotView closestSlot = null;
+        float minDistance = float.MaxValue;
+
+        foreach (var slot in slots)
+        {
+            if (slot == null) continue;
+
+            float distance = Mathf.Abs(slot.Rect.anchoredPosition.y);
+
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                closestSlot = slot;
+            }
+        }
+        return closestSlot;
     }
     private IEnumerator LerpReelSpeed(float time, float from, float to, string resultEvent)
     {
@@ -110,7 +146,7 @@ public class ReelView : MonoBehaviourExt
             MoveSlots(delta);
             yield return null;
         }
-
+        PlayParticles();
         Settings.Fsm.Invoke(C.FSMStoppedSig);
     }
 }
